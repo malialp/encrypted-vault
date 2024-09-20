@@ -1,7 +1,5 @@
 # File Encryption App
 
-## Overview
-
 This is a Python-based file encryption and decryption application. The app allows users to encrypt and decrypt files using a symmetric encryption algorithm (AES). It is designed to protect sensitive information by converting plain text files into unreadable formats and restoring them to their original form when required.
 
 ## Features
