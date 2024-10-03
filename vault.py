@@ -70,7 +70,6 @@ class EncryptedVault:
             progress = 0
             while True:
                 percent = progress / file_size
-                # print(file_size,'/', progress)
                 print(f'\r==> {filename}' + ' '*((self.max_file_char_len + 4) - len(filename)) + colored('[ ECRYPTING...]', 'white', 'on_light_blue') + colored(f'[{"█"*math.floor(percent*20)}{"░"*(20-math.floor(percent*20))}][{math.ceil(percent*100)}%]', 'white', 'on_light_magenta') , end='', flush=True)
                 block = read_file.read(self.encrypt_chunk_size)
                 
@@ -94,33 +93,36 @@ class EncryptedVault:
 
     def decrypt_file(self, file_path, f):
         filename = file_path if len(file_path) < self.max_file_char_len else file_path[:self.max_file_char_len] + '...'
-        print(f'\r==> {filename}' + ' '*((self.max_file_char_len + 4) - len(filename)) + colored('[  ENCRYPTED  ]', 'white', 'on_light_green'), end='', flush=True)
-        # FILE DECRYPTION
-
+    
         new_file_path = '.'.join(file_path.split('.')[:-1])
+        try: 
+            print(f'\r==> {filename}' + ' '*((self.max_file_char_len + 4) - len(filename)) + colored('[  ENCRYPTED  ]', 'white', 'on_light_green'), end='', flush=True)
+            # FILE DECRYPTION
+            with open(file_path, 'rb') as read_file, open(new_file_path, 'wb') as write_file:
+                file_size = os.path.getsize(file_path)
+                progress = 0
+                while True:
+                    percent = progress / file_size
+                    print(f'\r==> {filename}' + ' '*((self.max_file_char_len + 4) - len(filename)) + colored('[DECRYPTING...]', 'white', 'on_light_blue') + colored(f'[{"█"*math.floor(percent*20)}{"░"*(20-math.floor(percent*20))}][{math.ceil(percent*100)}%]', 'white', 'on_light_magenta') , end='', flush=True)
+                    block = read_file.read(self.decrypt_chunk_size)
+                    if not block:
+                        break
+                    decrypted = f.decrypt(block)
+                    write_file.write(decrypted)
 
-        with open(file_path, 'rb') as read_file, open(new_file_path, 'wb') as write_file:
-            file_size = os.path.getsize(file_path)
-            progress = 0
-            while True:
-                percent = progress / file_size
-                # print(file_size,'/', progress)
-                print(f'\r==> {filename}' + ' '*((self.max_file_char_len + 4) - len(filename)) + colored('[DECRYPTING...]', 'white', 'on_light_blue') + colored(f'[{"█"*math.floor(percent*20)}{"░"*(20-math.floor(percent*20))}][{math.ceil(percent*100)}%]', 'white', 'on_light_magenta') , end='', flush=True)
-                block = read_file.read(self.decrypt_chunk_size)
-                if not block:
-                    break
-                decrypted = f.decrypt(block)
-                write_file.write(decrypted)
+                    if progress + self.decrypt_chunk_size >= file_size:
+                        progress = file_size
+                    else:
+                        progress += self.decrypt_chunk_size
 
-                if progress + self.decrypt_chunk_size >= file_size:
-                    progress = file_size
-                else:
-                    progress += self.decrypt_chunk_size
-            
-        os.remove(file_path)
+                # FILE DECRYPTION
+                print(f'\r==> {filename}' + ' '*((self.max_file_char_len + 4) - len(filename)) + colored('[  DECRYPTED  ]', 'white', 'on_light_red'), end='\n', flush=True)
 
-        # FILE DECRYPTION
-        print(f'\r==> {filename}' + ' '*((self.max_file_char_len + 4) - len(filename)) + colored('[  DECRYPTED  ]', 'white', 'on_light_red'), end='\n', flush=True)
+            os.remove(file_path)
+        except:
+            print(f'\r==> {filename}' + ' '*((self.max_file_char_len + 4) - len(filename)) + colored('[ WRONG  PASS ]', 'white', 'on_light_red') + colored(f'[{"█"*math.floor(percent*20)}{"░"*(20-math.floor(percent*20))}][{math.ceil(percent*100)}%]', 'white', 'on_light_magenta') , end='\n', flush=True)
+            os.remove(new_file_path)
+            return 'abort'
 
 
     def encrypt_vault(self):
@@ -156,11 +158,18 @@ class EncryptedVault:
         print(colored(self.max_file_char_len*3*'-', 'white', 'on_magenta'))
 
         for file_path in vault_files:
-            self.decrypt_file(os.path.join(self.vault_path, file_path), f)
-        
+            status = self.decrypt_file(os.path.join(self.vault_path, file_path), f)
+            if status == 'abort':
+                break
+
         print(colored(self.max_file_char_len*3*'-', 'white', 'on_magenta'))
-        print(colored('DECRYPTION COMPLETED.', 'white', 'on_blue'))
-        print(colored('VAULT IS UNLOCKED.', 'white', 'on_light_red'))
+        
+        if status != 'abort':
+            print(colored('DECRYPTION COMPLETED.', 'white', 'on_blue'))
+            print(colored('VAULT IS UNLOCKED.', 'white', 'on_light_red'))
+        else:
+            print(colored('DECRYPTION NOT COMPLETED.', 'white', 'on_red'))
+            print(colored('CHECK YOUR PASSWORD AND TRY AGAIN', 'white', 'on_red'))
         
 
 vault = EncryptedVault()
